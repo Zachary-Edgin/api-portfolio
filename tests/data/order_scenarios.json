@@ -1,0 +1,73 @@
+[
+  {
+    "test_id": "ORD_001",
+    "description": "Single item, single unit",
+    "lines": [
+      {"unit_price": 10.00, "quantity": 1}
+    ],
+    "expected_total": 10.00
+  },
+  {
+    "test_id": "ORD_002",
+    "description": "Single item, multiple units",
+    "lines": [
+      {"unit_price": 5.00, "quantity": 4}
+    ],
+    "expected_total": 20.00
+  },
+  {
+    "test_id": "ORD_003",
+    "description": "Two items, equal quantities",
+    "lines": [
+      {"unit_price": 10.00, "quantity": 2},
+      {"unit_price": 20.00, "quantity": 2}
+    ],
+    "expected_total": 60.00
+  },
+  {
+    "test_id": "ORD_004",
+    "description": "Two items, different quantities",
+    "lines": [
+      {"unit_price": 100.00, "quantity": 1},
+      {"unit_price": 0.50,   "quantity": 200}
+    ],
+    "expected_total": 200.00
+  },
+  {
+    "test_id": "ORD_005",
+    "description": "Three items mixed quantities",
+    "lines": [
+      {"unit_price": 9.99,  "quantity": 3},
+      {"unit_price": 4.50,  "quantity": 2},
+      {"unit_price": 1.00,  "quantity": 10}
+    ],
+    "expected_total": 48.97
+  },
+  {
+    "test_id": "ORD_006",
+    "description": "Large quantity bulk order",
+    "lines": [
+      {"unit_price": 0.10, "quantity": 1000}
+    ],
+    "expected_total": 100.00
+  },
+  {
+    "test_id": "ORD_007",
+    "description": "High unit price single item",
+    "lines": [
+      {"unit_price": 9999.99, "quantity": 1}
+    ],
+    "expected_total": 9999.99
+  },
+  {
+    "test_id": "ORD_008",
+    "description": "Four line items - comprehensive order",
+    "lines": [
+      {"unit_price": 25.00, "quantity": 4},
+      {"unit_price": 12.50, "quantity": 8},
+      {"unit_price": 3.75,  "quantity": 12},
+      {"unit_price": 50.00, "quantity": 1}
+    ],
+    "expected_total": 295.00
+  }
+]

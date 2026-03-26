@@ -1,0 +1,13 @@
+test_id,name,email,country,expected_status,description
+SUP_001,Acme Supplies,acme@example.com,US,201,Valid supplier - all fields correct
+SUP_002,Global Parts Ltd,global@parts.de,DE,201,Valid supplier - German company
+SUP_003,Tokyo Electronics,tokyo@elec.co.jp,JP,201,Valid supplier - Japanese company
+SUP_004,Minimal Co,minimal@test.io,CA,201,Valid supplier - short but valid name
+SUP_005,,missing@email.com,US,422,Missing name field
+SUP_006,No Email Supplier,,US,422,Missing email field
+SUP_007,No Country Supplier,nocountry@test.com,,422,Missing country field
+SUP_008,Bad Email Supplier,not-an-email,US,422,Invalid email format - no @ symbol
+SUP_009,Bad Email Two,missing-domain@,US,422,Invalid email format - no domain
+SUP_010,Bad Email Three,@nodomain.com,US,422,Invalid email format - no local part
+SUP_011,A Very Long Supplier Name That Goes On And On And Tests The Limits Of What The System Will Accept For A Name Field,long@test.com,US,201,Very long name - should still be accepted
+SUP_012,Symbols & Co,symbols@test.com,US,201,Name with ampersand - valid special char
