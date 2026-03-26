@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.venv/
+venv/
+
+# Database
+*.db
+
+# Test artifacts
+artifacts/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,54 @@
+name: API Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start app
+        run: docker compose up -d --build app
+
+      - name: Wait for app to be healthy
+        run: |
+          echo "Waiting for app..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8000/docs > /dev/null; then
+              echo "App is up."
+              break
+            fi
+            echo "Attempt $i/20..."
+            sleep 3
+          done
+
+      - name: Run tests
+        run: |
+          docker compose run --rm \
+            -e ENV=local \
+            tests pytest tests/ -v \
+            --html=artifacts/report.html \
+            --self-contained-html \
+            --junitxml=artifacts/results.xml
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts
+          path: artifacts/
+
+      - name: Publish HTML report to GitHub Pages
+        if: github.ref == 'refs/heads/main' && always()
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./artifacts
+          destination_dir: .
