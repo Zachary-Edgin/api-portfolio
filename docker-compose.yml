@@ -20,7 +20,7 @@ services:
       app:
         condition: service_healthy
     environment:
-      - ENV=local
+      - ENV=docker
     command: >
       pytest tests/ -v
       --html=artifacts/report.html

@@ -6,7 +6,8 @@ import os
 
 ENVIRONMENTS = {
     "local":   "http://localhost:8000",
-    "staging": "http://staging.your-app.com",  # replace when you have a real staging URL
+    "docker":  "http://app:8000",
+    "staging": "http://staging.your-app.com",
 }
 
 BASE_URL = ENVIRONMENTS.get(os.getenv("ENV", "local"))
