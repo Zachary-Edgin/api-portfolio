@@ -1,6 +1,6 @@
 # Procurement API — SDET Portfolio Project
 
-[![tests](https://github.com/YOUR_USERNAME/api-portfolio/actions/workflows/tests.yml/badge.svg)](https://github.com/YOUR_USERNAME/api-portfolio/actions/workflows/tests.yml)
+[![tests](https://github.com/Zachary-Edgin/api-portfolio/actions/workflows/tests.yml/badge.svg)](https://github.com/Zachary-Edgin/api-portfolio/actions/workflows/tests.yml)
 
 A portfolio-grade API test automation project demonstrating real-world QA engineering skills:
 JWT auth testing, full CRUD validation, business rule enforcement, chained workflow tests,
