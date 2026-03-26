@@ -71,9 +71,10 @@ class TestSupplierDataDriven:
         # Append a short UUID to name and email so repeated runs don't
         # collide on unique constraints in the database
         suffix = uuid.uuid4().hex[:6]
+        is_valid = int(scenario["expected_status"]) == 201
         payload = {
-            "name":    (scenario["name"]    + f"-{suffix}") if scenario["name"]    else "",
-            "email":   scenario["email"].replace("@", f"-{suffix}@") if "@" in scenario.get("email", "") else scenario.get("email", ""),
+            "name":    (scenario["name"] + f"-{suffix}") if scenario["name"] and is_valid else scenario["name"],
+            "email":   scenario["email"].replace("@", f"-{suffix}@") if "@" in scenario.get("email", "") and is_valid else scenario.get("email", ""),
             "country": scenario["country"],
         }
 
