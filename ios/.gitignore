@@ -1,0 +1,21 @@
+# Xcode / Swift build artifacts
+build/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode per-user data (keep shared schemes under xcshareddata)
+xcuserdata/
+*.xcuserdatad/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store

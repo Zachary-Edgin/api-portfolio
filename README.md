@@ -6,6 +6,10 @@ A portfolio-grade API test automation project demonstrating real-world QA engine
 JWT auth testing, full CRUD validation, business rule enforcement, chained workflow tests,
 environment configuration, and CI/CD integration.
 
+> **Also in this repo:** [`ios/`](ios/) — **RealBite**, a native SwiftUI iOS app for
+> finding nearby restaurants and ordering directly from their own websites for
+> pickup (no delivery-app markup). See [`ios/README.md`](ios/README.md).
+
 ---
 
 ## What's Inside
