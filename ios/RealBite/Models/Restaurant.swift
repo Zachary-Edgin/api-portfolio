@@ -78,6 +78,32 @@ extension Restaurant {
     /// True when we can hand the user straight to the restaurant's own ordering page.
     var canOrderDirect: Bool { website != nil }
 
+    /// First letter of the name, for cover-art fallbacks.
+    var monogram: String {
+        String(name.trimmingCharacters(in: .whitespaces).first.map(String.init) ?? "•").uppercased()
+    }
+
+    /// Stable seed (name-derived) so a restaurant's generated cover art stays
+    /// consistent between the list, map, and detail screens.
+    var coverSeed: Int {
+        name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+    }
+
+    /// An SF Symbol that suits the restaurant's category, used on cover art and pins.
+    var glyphSymbol: String {
+        switch category {
+        case "Café": return "cup.and.saucer.fill"
+        case "Brewery", "Winery": return "wineglass.fill"
+        case "Bakery": return "birthday.cake.fill"
+        default: return "fork.knife"
+        }
+    }
+
+    /// Compact "Category · Distance" line used across cards.
+    var subtitle: String {
+        [category, distanceDescription].compactMap { $0 }.joined(separator: " · ")
+    }
+
     private static func formatAddress(from placemark: MKPlacemark) -> String? {
         let parts = [
             placemark.thoroughfare.flatMap { street in

@@ -18,6 +18,8 @@ final class RestaurantListViewModel: ObservableObject {
 
     @Published private(set) var phase: Phase = .idle
     @Published var searchText: String = ""
+    @Published var selectedCategory: FoodCategory = FoodCategory.presets[0]
+    @Published private(set) var authorizationStatus: CLAuthorizationStatus
 
     let locationManager = LocationManager()
     private let searchService: RestaurantSearchService
@@ -26,7 +28,20 @@ final class RestaurantListViewModel: ObservableObject {
 
     init(searchService: RestaurantSearchService = RestaurantSearchService()) {
         self.searchService = searchService
+        self.authorizationStatus = locationManager.authorizationStatus
         observeLocation()
+    }
+
+    /// True once we have a usable location authorization.
+    var isLocationReady: Bool {
+        authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
+    }
+
+    /// Pick a quick-filter category and re-run the search.
+    func select(_ category: FoodCategory) {
+        selectedCategory = category
+        searchText = category.query ?? ""
+        performSearch()
     }
 
     var restaurants: [Restaurant] {
@@ -76,6 +91,7 @@ final class RestaurantListViewModel: ObservableObject {
         locationManager.$authorizationStatus
             .sink { [weak self] status in
                 guard let self else { return }
+                self.authorizationStatus = status
                 if status == .denied || status == .restricted {
                     self.phase = .failed(Self.permissionMessage)
                 }
