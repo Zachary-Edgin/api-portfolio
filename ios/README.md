@@ -24,43 +24,42 @@ the restaurant actually charges.
 
 ## Features
 
-- **Onboarding gate** — a branded location-permission screen that doubles as the
-  "enable in Settings" prompt if access was denied.
-- **Nearby search** — finds restaurants, cafés, bakeries, and more around your
-  current location.
-- **Category chips** — one-tap filters (Pizza, Sushi, Coffee, Tacos, Vegan…) that
-  re-run the nearby search.
-- **Search by name or cuisine** — type "tacos", "pizza", or a restaurant name.
-- **Image-forward cards** — each restaurant gets tasteful generated cover art
-  (MapKit provides no photos), with glass distance/pickup pills and a favorite
-  heart. Favorites persist across launches.
-- **List + Map** — browse distance-sorted cards or a map with custom pins and a
-  synced place carousel (tap a pin to focus its card).
-- **Order direct** — a hero detail screen with a sticky **Order for Pickup** bar
-  that opens the restaurant's own website in an in-app browser (no marketplace
-  markup). An "Order direct" badge flags restaurants that publish an ordering page.
-- **Directions & Call** — one tap to Apple Maps directions or to phone the
-  restaurant.
-- **No accounts, no API keys** — restaurant discovery uses Apple Maps
-  (`MKLocalSearch`), so the app runs out of the box with nothing to configure.
-- **Polished states** — shimmering skeleton cards while loading, plus clear
-  empty/error states.
+- **Onboarding gate** — a calm, minimal location-permission screen that doubles
+  as the "enable in Settings" prompt if access was denied.
+- **Live nearby search** — real restaurants, cafés, bakeries, and more around
+  your location, from **OpenStreetMap** (via the Overpass API).
+- **Category chips that actually filter** — one-tap filters (Pizza, Sushi,
+  Coffee, Mexican, Vegan…) each map to a real Overpass query.
+- **Search by name** — type a restaurant or dish; searches OSM by name.
+- **Clean, typographic list** — calm rows with a monochrome category thumbnail,
+  name, and one line of metadata (cuisine · distance). No busy badges.
+- **List + Map** — browse a distance-sorted list or a minimal map with clean
+  pins and a single selected-place card.
+- **Order direct** — a detail screen with a sticky **Order for Pickup** bar that
+  opens the restaurant's own website (OSM `website` tag) in an in-app browser, so
+  you order from the source with no marketplace markup.
+- **Directions, Call, Website** — quiet secondary actions; Apple Maps directions,
+  phone dialer, in-app browser.
+- **Favorites** — heart a place from the detail screen; persists across launches.
+- **No accounts, no API keys** — OpenStreetMap is open data, so the app runs out
+  of the box with nothing to configure.
 
 ### Design
 
-The UI follows contemporary food/discovery app patterns (the kind catalogued on
-[Mobbin](https://mobbin.com/explore/mobile)): an onboarding gate, filter chips,
-image-forward cards with glass overlays and favorite hearts, a hero cover with a
-sticky bottom order bar, and a map with custom pins plus a place carousel. Cover
-art is generated deterministically per restaurant, so it stays consistent across
-list, map, and detail without inventing photos or ratings the data doesn't have.
+Deliberately minimal — closer to Blank Street / Kitchen Stories than a busy
+delivery marketplace. Generous whitespace, a single restrained terracotta accent,
+hairline dividers, and one clear action per screen. Because OpenStreetMap has no
+food photography, thumbnails are calm monochrome tiles rather than invented
+imagery — honest to the data.
 
 ---
 
 ## Tech stack
 
 - **SwiftUI** (iOS 17+), MVVM architecture
-- **MapKit** — `MKLocalSearch` for restaurant discovery, `Map` for the map tab
+- **OpenStreetMap / Overpass API** — live restaurant data over `URLSession`
+  (no API key, no account, no billing)
+- **MapKit** — `Map` for the map tab, directions, and the detail map card
 - **CoreLocation** — one-shot "when in use" location for nearby search
 - **SafariServices** — `SFSafariViewController` for in-app direct ordering
 
@@ -72,23 +71,22 @@ ios/
 └─ RealBite/
    ├─ RealBiteApp.swift        # App entry point
    ├─ Models/
-   │  ├─ Restaurant.swift      # Restaurant model (+ MKMapItem mapping, cover art seed)
-   │  └─ FoodCategory.swift    # Quick-filter chip presets
+   │  ├─ Restaurant.swift      # Restaurant model + presentation helpers
+   │  └─ FoodCategory.swift    # Filter chips → Overpass tag queries
    ├─ Services/
    │  ├─ LocationManager.swift         # CoreLocation wrapper
-   │  ├─ RestaurantSearchService.swift # MKLocalSearch nearby search
+   │  ├─ OverpassService.swift         # OpenStreetMap nearby search + OSM→model
    │  └─ FavoritesStore.swift          # Persisted favorites (UserDefaults)
    ├─ ViewModels/
    │  └─ RestaurantListViewModel.swift # State + search + category orchestration
    ├─ Views/
    │  ├─ RootView.swift               # Onboarding gate → tab container
-   │  ├─ OnboardingView.swift         # Branded location-permission screen
-   │  ├─ RestaurantListView.swift     # Chips + card list + states
-   │  ├─ RestaurantCardView.swift     # Image-forward card
-   │  ├─ RestaurantDetailView.swift   # Hero + sticky "Order for Pickup" bar
-   │  ├─ RestaurantMapView.swift      # Map with custom pins + place carousel
-   │  ├─ CoverArtView.swift           # Generated per-restaurant cover art
-   │  ├─ Components.swift             # Shared UI (chips, badges, favorite button)
+   │  ├─ OnboardingView.swift         # Minimal location-permission screen
+   │  ├─ RestaurantListView.swift     # Chips + typographic list + states
+   │  ├─ RestaurantRowView.swift      # Clean list row
+   │  ├─ RestaurantDetailView.swift   # Detail + sticky "Order for Pickup" bar
+   │  ├─ RestaurantMapView.swift      # Minimal map with dots + selected card
+   │  ├─ Components.swift             # Shared UI (chip, thumbnail, favorite, Color+hex)
    │  └─ SafariView.swift             # In-app browser for direct ordering
    └─ Assets.xcassets/         # App icon + accent color
 ```
@@ -103,8 +101,9 @@ groups) and iOS 17+ to run.
 3. Run (⌘R).
 
 On the **Simulator**, set a location so nearby search returns results:
-**Features ▸ Location ▸ Apple** (or **Custom Location…**). On a device, grant
-location permission when prompted.
+**Features ▸ Location ▸ Apple** (or **Custom Location…** in a city). On a device,
+grant location permission when prompted. Results come from OpenStreetMap, so
+coverage is richest in populated areas.
 
 From the command line:
 
@@ -117,15 +116,24 @@ xcodebuild -project RealBite.xcodeproj -scheme RealBite \
 ## How ordering works
 
 RealBite never places an order itself and adds no fees. When you tap **Order for
-Pickup**, it opens the restaurant's own website (as provided by Apple Maps) in an
-in-app Safari view. If a restaurant hasn't published an ordering page, RealBite
-offers to search the web for their menu or to call them directly.
+Pickup**, it opens the restaurant's own website (the OpenStreetMap `website` tag)
+in an in-app Safari view. If a restaurant hasn't published an ordering page,
+RealBite offers to search the web for their menu or to call them directly.
+
+## Data & privacy
+
+- Restaurant data comes from **OpenStreetMap** via the public Overpass API. The
+  app sends only a coordinate + radius (and category/name filters) to look up
+  nearby places — no account, no tracking, no API key.
+- Coverage and detail (websites, phone, hours) depend on what the local OSM
+  community has mapped; it's excellent in cities, thinner in rural areas.
 
 ## Notes & limitations
 
-- Restaurant data (including websites) comes from Apple Maps and is only as
-  complete as Apple's listings. Not every restaurant publishes an online
-  ordering URL.
-- Hours, live availability, and menus are not shown — RealBite is a discovery and
-  hand-off tool, not an ordering backend.
+- Not every restaurant lists an online ordering URL; the app falls back to a web
+  search or a phone call.
+- `opening_hours` is shown as-is from OSM (e.g. `Mo-Fr 08:00-22:00`); the app
+  doesn't compute a live "open now" status.
+- Menus and prices aren't shown — RealBite is a discovery and hand-off tool, not
+  an ordering backend.
 - Pickup only, by design.

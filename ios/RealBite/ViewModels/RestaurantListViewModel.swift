@@ -2,8 +2,8 @@ import Foundation
 import CoreLocation
 import Combine
 
-/// Drives the nearby-restaurants screens: owns location, runs searches, and
-/// exposes a simple `phase` the views render from.
+/// Drives the nearby-restaurants screens: owns location, runs OpenStreetMap
+/// searches (by category or free text), and exposes a simple `phase` to render.
 @MainActor
 final class RestaurantListViewModel: ObservableObject {
 
@@ -22,26 +22,15 @@ final class RestaurantListViewModel: ObservableObject {
     @Published private(set) var authorizationStatus: CLAuthorizationStatus
 
     let locationManager = LocationManager()
-    private let searchService: RestaurantSearchService
+    private let service: OverpassService
     private var cancellables = Set<AnyCancellable>()
+    private var searchTask: Task<Void, Never>?
     private var hasRequestedInitialSearch = false
 
-    init(searchService: RestaurantSearchService = RestaurantSearchService()) {
-        self.searchService = searchService
+    init(service: OverpassService = OverpassService()) {
+        self.service = service
         self.authorizationStatus = locationManager.authorizationStatus
         observeLocation()
-    }
-
-    /// True once we have a usable location authorization.
-    var isLocationReady: Bool {
-        authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
-    }
-
-    /// Pick a quick-filter category and re-run the search.
-    func select(_ category: FoodCategory) {
-        selectedCategory = category
-        searchText = category.query ?? ""
-        performSearch()
     }
 
     var restaurants: [Restaurant] {
@@ -49,11 +38,17 @@ final class RestaurantListViewModel: ObservableObject {
         return []
     }
 
+    var isLocationReady: Bool {
+        authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways
+    }
+
+    // MARK: - Intent
+
     /// Called when the main screen first appears.
     func start() {
-        if locationManager.isAuthorized {
+        if isLocationReady {
             locationManager.requestLocation()
-        } else if locationManager.authorizationStatus == .notDetermined {
+        } else if authorizationStatus == .notDetermined {
             phase = .locating
             locationManager.requestLocation()
         } else {
@@ -61,7 +56,20 @@ final class RestaurantListViewModel: ObservableObject {
         }
     }
 
-    /// Re-run the search with the current text against the latest known location.
+    /// Pick a quick-filter category and re-run the search.
+    func select(_ category: FoodCategory) {
+        selectedCategory = category
+        searchText = ""
+        performSearch()
+    }
+
+    /// Run a free-text search; resets the category chips to "All".
+    func submitTextSearch() {
+        selectedCategory = FoodCategory.presets[0]
+        performSearch()
+    }
+
+    /// Re-run the search against the latest known location.
     func performSearch() {
         guard let location = locationManager.location else {
             locationManager.requestLocation()
@@ -99,17 +107,25 @@ final class RestaurantListViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    private var currentFilter: String {
+        let text = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? selectedCategory.overpass : OverpassService.nameFilter(text)
+    }
+
     private func runSearch(near center: CLLocationCoordinate2D) {
+        searchTask?.cancel()
         phase = .loading
-        let query = searchText
-        Task {
+        let filter = currentFilter
+        searchTask = Task {
             do {
-                let results = try await searchService.search(near: center, query: query)
+                let results = try await service.search(near: center, filter: filter)
+                if Task.isCancelled { return }
                 self.phase = results.isEmpty ? .empty : .loaded(results)
             } catch is CancellationError {
-                // Ignore — a newer search superseded this one.
+                // Superseded by a newer search.
             } catch {
-                self.phase = .failed("Couldn't load restaurants. \(error.localizedDescription)")
+                if Task.isCancelled { return }
+                self.phase = .failed(error.localizedDescription)
             }
         }
     }

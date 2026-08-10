@@ -1,8 +1,8 @@
 import SwiftUI
 import MapKit
 
-/// Restaurant detail: a hero cover, quick actions, details, and a sticky
-/// "Order for Pickup" bar that hands the user to the restaurant's own site.
+/// A calm restaurant detail: title, a clean map, a few quiet actions, and one
+/// clear primary action — order directly from the restaurant's own site for pickup.
 struct RestaurantDetailView: View {
     let restaurant: Restaurant
 
@@ -11,22 +11,22 @@ struct RestaurantDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                hero
-                quickActions
-                infoCard
-                locationCard
-                valueNote
+            VStack(alignment: .leading, spacing: 28) {
+                header
+                mapCard
+                actions
+                details
+                valueLine
             }
-            .padding(16)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
         }
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle(restaurant.name)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                FavoriteButton(restaurant: restaurant, glass: false)
+                FavoriteButton(restaurant: restaurant)
             }
         }
         .safeAreaInset(edge: .bottom) { orderBar }
@@ -34,7 +34,7 @@ struct RestaurantDetailView: View {
             SafariView(url: destination.url).ignoresSafeArea()
         }
         .confirmationDialog(
-            "This restaurant hasn't listed an online ordering page.",
+            "This restaurant hasn’t listed an online ordering page.",
             isPresented: $showingNoWebsiteFallback,
             titleVisibility: .visible
         ) {
@@ -50,123 +50,95 @@ struct RestaurantDetailView: View {
         }
     }
 
-    // MARK: - Hero
+    // MARK: - Header
 
-    private var hero: some View {
-        CoverArtView(restaurant: restaurant, glyphSize: 64)
-            .frame(height: 210)
-            .frame(maxWidth: .infinity)
-            .overlay(alignment: .bottomLeading) {
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.55)],
-                    startPoint: .center,
-                    endPoint: .bottom
-                )
-            }
-            .overlay(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 6) {
-                    if let category = restaurant.category {
-                        Text(category.uppercased())
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
-                    Text(restaurant.name)
-                        .font(.system(size: 26, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                    HStack(spacing: 8) {
-                        if let distance = restaurant.distanceDescription {
-                            Label(distance, systemImage: "location.fill")
-                        }
-                        Label("Pickup", systemImage: "bag.fill")
-                    }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                }
-                .padding(16)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-    }
-
-    // MARK: - Quick actions
-
-    private var quickActions: some View {
-        HStack(spacing: 10) {
-            QuickAction(icon: "arrow.triangle.turn.up.right.diamond.fill", label: "Directions", action: openDirections)
-            QuickAction(icon: "phone.fill", label: "Call", action: callRestaurant, disabled: restaurant.phoneNumber == nil)
-            QuickAction(icon: "globe", label: "Website", action: openWebsite, disabled: restaurant.website == nil)
-        }
-    }
-
-    // MARK: - Info
-
-    private var infoCard: some View {
-        VStack(spacing: 0) {
-            if let address = restaurant.address {
-                InfoRow(icon: "mappin.and.ellipse", text: address)
-            }
-            if let phone = restaurant.phoneNumber {
-                if restaurant.address != nil { Divider().padding(.leading, 46) }
-                InfoRow(icon: "phone.fill", text: phone)
-            }
-            if let website = restaurant.website {
-                if restaurant.address != nil || restaurant.phoneNumber != nil { Divider().padding(.leading, 46) }
-                InfoRow(icon: "globe", text: website.host ?? website.absoluteString)
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(restaurant.name)
+                .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                .fixedSize(horizontal: false, vertical: true)
+            if !restaurant.metaLine.isEmpty {
+                Text(restaurant.metaLine)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private var locationCard: some View {
+    private var mapCard: some View {
         Map(initialPosition: .region(region), interactionModes: []) {
-            Annotation(restaurant.name, coordinate: restaurant.coordinate) {
+            Annotation("", coordinate: restaurant.coordinate) {
                 Image(systemName: "mappin.circle.fill")
-                    .font(.title)
-                    .foregroundStyle(Color.accentColor)
-                    .background(Circle().fill(.white).padding(3))
+                    .font(.title2)
+                    .foregroundStyle(Color.accentColor, Color(.systemBackground))
             }
+            .annotationTitles(.hidden)
         }
-        .frame(height: 150)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .frame(height: 170)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .allowsHitTesting(false)
     }
 
-    private var valueNote: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.green)
-            Text("Ordering here goes straight to the restaurant — no delivery-app commissions or service fees added to your total.")
+    // MARK: - Actions
+
+    private var actions: some View {
+        HStack(spacing: 0) {
+            SecondaryAction(icon: "arrow.triangle.turn.up.right.diamond", label: "Directions", action: openDirections)
+            SecondaryAction(icon: "phone", label: "Call", action: callRestaurant, disabled: restaurant.phoneNumber == nil)
+            SecondaryAction(icon: "safari", label: "Website", action: openWebsite, disabled: restaurant.website == nil)
+        }
+    }
+
+    // MARK: - Details
+
+    private var details: some View {
+        VStack(spacing: 0) {
+            if let address = restaurant.address {
+                DetailRow(label: "Address", value: address)
+            }
+            if let phone = restaurant.phoneNumber {
+                DetailRow(label: "Phone", value: phone)
+            }
+            if let hours = restaurant.openingHours {
+                DetailRow(label: "Hours", value: hours)
+            }
+            if let website = restaurant.website {
+                DetailRow(label: "Website", value: website.host ?? website.absoluteString)
+            }
+        }
+    }
+
+    private var valueLine: some View {
+        Label {
+            Text("Direct from the restaurant — no delivery-app fees added.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+        } icon: {
+            Image(systemName: "checkmark.seal")
+                .font(.footnote)
+                .foregroundStyle(Color.accentColor)
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.green.opacity(0.10))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .labelStyle(.titleAndIcon)
     }
 
     // MARK: - Sticky order bar
 
     private var orderBar: some View {
-        VStack(spacing: 0) {
-            Divider()
-            Button(action: orderDirect) {
-                Label("Order for Pickup", systemImage: "bag.badge.plus")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
+        Button(action: orderDirect) {
+            Text("Order for Pickup")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
         }
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
         .background(.bar)
     }
 
-    // MARK: - Actions
+    // MARK: - Actions logic
 
     private func orderDirect() {
         if let website = restaurant.website {
@@ -183,9 +155,7 @@ struct RestaurantDetailView: View {
     private func openDirections() {
         let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: restaurant.coordinate))
         mapItem.name = restaurant.name
-        mapItem.openInMaps(launchOptions: [
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-        ])
+        mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
 
     private func callRestaurant() {
@@ -195,8 +165,6 @@ struct RestaurantDetailView: View {
         else { return }
         UIApplication.shared.open(url)
     }
-
-    // MARK: - Helpers
 
     private var region: MKCoordinateRegion {
         MKCoordinateRegion(center: restaurant.coordinate, latitudinalMeters: 400, longitudinalMeters: 400)
@@ -211,7 +179,7 @@ struct RestaurantDetailView: View {
 
 // MARK: - Subviews
 
-private struct QuickAction: View {
+private struct SecondaryAction: View {
     let icon: String
     let label: String
     let action: () -> Void
@@ -219,14 +187,11 @@ private struct QuickAction: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: icon).font(.system(size: 18, weight: .semibold))
-                Text(label).font(.caption.weight(.semibold))
+            VStack(spacing: 7) {
+                Image(systemName: icon).font(.system(size: 20, weight: .regular))
+                Text(label).font(.caption)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .foregroundStyle(disabled ? Color.secondary : Color.accentColor)
         }
         .buttonStyle(.plain)
@@ -234,21 +199,24 @@ private struct QuickAction: View {
     }
 }
 
-private struct InfoRow: View {
-    let icon: String
-    let text: String
+private struct DetailRow: View {
+    let label: String
+    let value: String
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 22)
-                .foregroundStyle(Color.accentColor)
-            Text(text)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 68, alignment: .leading)
+                Text(value)
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 12)
+            Divider().overlay(Color.primary.opacity(0.06))
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
     }
 }
 
